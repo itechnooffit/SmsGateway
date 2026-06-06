@@ -180,33 +180,46 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void parseQrResult(String qrContent) {
-        try {
-            // Expected QR format: {"server":"https://...","email":"...","token":"..."}
+    try {
+        String apiKey = qrContent.trim();
+        String server = "";
+        if (qrContent.startsWith("{")) {
             JSONObject json = new JSONObject(qrContent);
-            String server = json.optString("server", "");
-            String email = json.optString("email", "");
-            String token = json.optString("token", "");
-
-            if (!TextUtils.isEmpty(server) && !TextUtils.isEmpty(token)) {
-                prefsManager.saveServerUrl(server);
-                prefsManager.saveEmail(email);
-                prefsManager.saveAuthToken(token);
-                prefsManager.setLoggedIn(true);
-                requestPermissionsAndProceed();
-            } else {
-                // Fill fields from QR if no token
-                if (!TextUtils.isEmpty(server)) binding.etServer.setText(server);
-                if (!TextUtils.isEmpty(email)) binding.etEmail.setText(email);
-                Toast.makeText(this, R.string.qr_fill_fields, Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            // Plain URL format
-            if (qrContent.startsWith("http")) {
-                binding.etServer.setText(qrContent);
-            }
-            Toast.makeText(this, R.string.qr_parse_error, Toast.LENGTH_SHORT).show();
+            apiKey = json.optString("key",
+                     json.optString("apiKey",
+                     json.optString("api_key", qrContent)));
+            server = json.optString("server", "");
         }
+        if (!server.isEmpty()) {
+            binding.etServer.setText(server);
+            prefsManager.saveServerUrl(server);
+        }
+        String finalServer = server.isEmpty() ? prefsManager.getServerUrl() : server;
+        prefsManager.saveEmail("qr_login");
+        setLoading(true);
+        ApiClient apiClient = new ApiClient(finalServer);
+        apiClient.login("qr_login", "QR:" + apiKey, new ApiClient.LoginCallback() {
+            @Override
+            public void onSuccess(LoginResponse response) {
+                runOnUiThread(() -> {
+                    setLoading(false);
+                    prefsManager.saveAuthToken(response.token);
+                    prefsManager.setLoggedIn(true);
+                    requestPermissionsAndProceed();
+                });
+            }
+            @Override
+            public void onError(String error) {
+                runOnUiThread(() -> {
+                    setLoading(false);
+                    Toast.makeText(LoginActivity.this, error, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    } catch (Exception e) {
+        Toast.makeText(this, R.string.qr_parse_error, Toast.LENGTH_SHORT).show();
     }
+}
 
     private void requestPermissionsAndProceed() {
         String[] permissions = {

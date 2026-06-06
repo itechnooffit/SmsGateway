@@ -1,70 +1,95 @@
 package com.smsgateway.app.utils;
 
 import android.util.Log;
-
 import com.smsgateway.app.models.LoginResponse;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
-import okhttp3.MediaType;
+import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class ApiClient {
-
     private static final String TAG = "ApiClient";
-    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-
     private final String baseUrl;
-    private final String token;
+    private final String sessionId;
     private final OkHttpClient client;
+    private static final String ANDROID_ID = "smsgate_device";
+    private static final String USER_ID = "1";
 
-    public ApiClient(String baseUrl) {
-        this(baseUrl, null);
-    }
+    public ApiClient(String baseUrl) { this(baseUrl, null); }
 
-    public ApiClient(String baseUrl, String token) {
-        // Normalize URL
-        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        this.token = token;
+    public ApiClient(String baseUrl, String sessionId) {
+        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length()-1) : baseUrl;
+        this.sessionId = sessionId;
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(15, TimeUnit.SECONDS)
-                .writeTimeout(15, TimeUnit.SECONDS)
                 .build();
     }
 
-    // ---- Login ----
     public void login(String email, String password, LoginCallback callback) {
         new Thread(() -> {
             try {
-                JSONObject body = new JSONObject();
-                body.put("email", email);
-                body.put("password", password);
+                final String[] androidId = {ANDROID_ID};
+                final String[] userId = {USER_ID};
 
-                Request request = new Request.Builder()
-                        .url(baseUrl + "/api/login")
-                        .post(RequestBody.create(body.toString(), JSON))
+                if (password.startsWith("QR:")) {
+                    String apiKey = password.substring(3);
+                    String uniqueId = "zikooo_" + android.os.Build.SERIAL;
+                    RequestBody regBody = new FormBody.Builder()
+                            .add("key", apiKey)
+                            .add("androidId", uniqueId)
+                            .add("model", android.os.Build.MODEL)
+                            .add("androidVersion", android.os.Build.VERSION.RELEASE)
+                            .add("appVersion", "1.0")
+                            .build();
+                    Request regReq = new Request.Builder()
+                            .url(baseUrl + "/services/register-device.php")
+                            .post(regBody)
+                            .build();
+                    try (Response r = client.newCall(regReq).execute()) {
+                        String rb = r.body() != null ? r.body().string() : "";
+                        Log.d(TAG, "QR Register: " + rb);
+                        JSONObject j = new JSONObject(rb);
+                        if (j.optBoolean("success", false)) {
+                            JSONObject data = j.optJSONObject("data");
+                            JSONObject device = data != null ? data.optJSONObject("device") : null;
+                            if (device != null) {
+                                userId[0] = String.valueOf(device.optInt("userID", 1));
+                                androidId[0] = device.optString("androidID", uniqueId);
+                            }
+                        } else {
+                            JSONObject err = j.optJSONObject("error");
+                            callback.onError(err != null ? err.optString("message") : "QR failed");
+                            return;
+                        }
+                    }
+                }
+
+                RequestBody body = new FormBody.Builder()
+                        .add("androidId", androidId[0])
+                        .add("userId", userId[0])
                         .build();
-
-                try (Response response = client.newCall(request).execute()) {
-                    String responseBody = response.body() != null ? response.body().string() : "";
-                    if (response.isSuccessful()) {
-                        JSONObject json = new JSONObject(responseBody);
-                        LoginResponse loginResponse = new LoginResponse();
-                        loginResponse.token = json.optString("token",
-                                json.optString("api_token", ""));
-                        loginResponse.userId = json.optString("id", "");
-                        callback.onSuccess(loginResponse);
+                Request req = new Request.Builder()
+                        .url(baseUrl + "/services/sign-in.php")
+                        .post(body)
+                        .build();
+                try (Response r = client.newCall(req).execute()) {
+                    String rb = r.body() != null ? r.body().string() : "";
+                    Log.d(TAG, "SignIn: " + rb);
+                    JSONObject j = new JSONObject(rb);
+                    if (j.optBoolean("success", false)) {
+                        JSONObject data = j.optJSONObject("data");
+                        LoginResponse lr = new LoginResponse();
+                        lr.token = data != null ? data.optString("sessionId", "") : "";
+                        lr.userId = userId[0];
+                        callback.onSuccess(lr);
                     } else {
-                        JSONObject err = new JSONObject(responseBody);
-                        callback.onError(err.optString("message", "Login failed: " + response.code()));
+                        JSONObject err = j.optJSONObject("error");
+                        callback.onError(err != null ? err.optString("message") : "Sign in failed");
                     }
                 }
             } catch (Exception e) {
@@ -74,108 +99,93 @@ public class ApiClient {
         }).start();
     }
 
-    // ---- Get pending outgoing SMS from server ----
     public void getPendingSms(PendingSmsCallback callback) {
         new Thread(() -> {
             try {
-                Request request = new Request.Builder()
-                        .url(baseUrl + "/api/sms/pending")
-                        .get()
-                        .addHeader("Authorization", "Bearer " + token)
+                RequestBody body = new FormBody.Builder()
+                        .add("deviceId", "261")
                         .build();
-
-                try (Response response = client.newCall(request).execute()) {
-                    String responseBody = response.body() != null ? response.body().string() : "[]";
-                    if (response.isSuccessful()) {
-                        JSONArray array;
-                        // Handle both array and object wrapper
-                        if (responseBody.trim().startsWith("[")) {
-                            array = new JSONArray(responseBody);
-                        } else {
-                            JSONObject obj = new JSONObject(responseBody);
-                            array = obj.optJSONArray("data");
-                            if (array == null) array = new JSONArray();
-                        }
-                        callback.onSuccess(array);
+                Request req = buildRequest("/services/get-messages.php", body);
+                try (Response r = client.newCall(req).execute()) {
+                    String rb = r.body() != null ? r.body().string() : "{}";
+                    JSONObject j = new JSONObject(rb);
+                    if (j.optBoolean("success", false)) {
+                        JSONObject data = j.optJSONObject("data");
+                        JSONArray messages = data != null ? data.optJSONArray("messages") : new JSONArray();
+                        if (messages == null) messages = new JSONArray();
+                        callback.onSuccess(messages);
                     } else {
-                        callback.onError("HTTP " + response.code());
+                        callback.onError("No messages");
                     }
                 }
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
+            } catch (Exception e) { callback.onError(e.getMessage()); }
         }).start();
     }
 
-    // ---- Report delivered ----
     public void reportDelivered(String messageId, SimpleCallback callback) {
-        updateMessageStatus(messageId, "delivered", null, callback);
+        reportStatus(messageId, "Delivered", callback);
     }
 
-    // ---- Report failed ----
     public void reportFailed(String messageId, String reason, SimpleCallback callback) {
-        updateMessageStatus(messageId, "failed", reason, callback);
+        reportStatus(messageId, "Failed", callback);
     }
 
-    private void updateMessageStatus(String messageId, String status, String reason, SimpleCallback callback) {
+    private void reportStatus(String messageId, String status, SimpleCallback callback) {
         new Thread(() -> {
             try {
-                JSONObject body = new JSONObject();
-                body.put("status", status);
-                if (reason != null) body.put("reason", reason);
-
-                Request request = new Request.Builder()
-                        .url(baseUrl + "/api/sms/" + messageId + "/status")
-                        .patch(RequestBody.create(body.toString(), JSON))
-                        .addHeader("Authorization", "Bearer " + token)
+                JSONArray messages = new JSONArray();
+                JSONObject msg = new JSONObject();
+                msg.put("ID", messageId);
+                msg.put("status", status);
+                msg.put("deliveredDate", new java.util.Date().toString());
+                messages.put(msg);
+                RequestBody body = new FormBody.Builder()
+                        .add("messages", messages.toString())
                         .build();
-
-                try (Response response = client.newCall(request).execute()) {
-                    if (response.isSuccessful()) callback.onSuccess();
-                    else callback.onError("HTTP " + response.code());
+                Request req = buildRequest("/services/report-status.php", body);
+                try (Response r = client.newCall(req).execute()) {
+                    if (r.isSuccessful()) callback.onSuccess();
+                    else callback.onError("HTTP " + r.code());
                 }
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
+            } catch (Exception e) { callback.onError(e.getMessage()); }
         }).start();
     }
 
-    // ---- Forward incoming SMS to server ----
     public void forwardIncomingSms(String from, String message, long timestamp, SimpleCallback callback) {
         new Thread(() -> {
             try {
-                JSONObject body = new JSONObject();
-                body.put("from", from);
-                body.put("message", message);
-                body.put("received_at", timestamp);
-
-                Request request = new Request.Builder()
-                        .url(baseUrl + "/api/sms/incoming")
-                        .post(RequestBody.create(body.toString(), JSON))
-                        .addHeader("Authorization", "Bearer " + token)
+                RequestBody body = new FormBody.Builder()
+                        .add("from", from)
+                        .add("message", message)
+                        .add("receivedDate", new java.util.Date(timestamp).toString())
                         .build();
-
-                try (Response response = client.newCall(request).execute()) {
-                    if (response.isSuccessful()) callback.onSuccess();
-                    else callback.onError("HTTP " + response.code());
+                Request req = buildRequest("/services/receive-message.php", body);
+                try (Response r = client.newCall(req).execute()) {
+                    if (r.isSuccessful()) callback.onSuccess();
+                    else callback.onError("HTTP " + r.code());
                 }
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
+            } catch (Exception e) { callback.onError(e.getMessage()); }
         }).start();
     }
 
-    // ---- Callbacks ----
+    private Request buildRequest(String path, RequestBody body) {
+        Request.Builder builder = new Request.Builder()
+                .url(baseUrl + path)
+                .post(body);
+        if (sessionId != null && !sessionId.isEmpty()) {
+            builder.addHeader("Cookie", "ZERO_SMS=" + sessionId);
+        }
+        return builder.build();
+    }
+
     public interface LoginCallback {
         void onSuccess(LoginResponse response);
         void onError(String error);
     }
-
     public interface PendingSmsCallback {
         void onSuccess(JSONArray messages);
         void onError(String error);
     }
-
     public interface SimpleCallback {
         void onSuccess();
         void onError(String error);

@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_grey">
-
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -16,18 +15,15 @@
             android:background="@color/primary_blue"
             app:titleTextColor="@android:color/white" />
     </com.google.android.material.appbar.AppBarLayout>
-
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
-
             <!-- Status Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -84,7 +80,6 @@
                     </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
-
             <!-- Connection Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -124,7 +119,6 @@
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
-
             <!-- SIM Card Selector -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -171,7 +165,6 @@
                     </RadioGroup>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
-
             <!-- Message Stats Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -261,7 +254,6 @@
                     </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
-
             <!-- Auto Retry Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -300,7 +292,6 @@
                         android:checked="true" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
-
             <!-- Notifications Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -339,7 +330,6 @@
                         android:checked="true" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
-
             <!-- Buttons -->
             <Button
                 android:id="@+id/btnToggleService"
@@ -350,7 +340,6 @@
                 android:text="@string/stop_service"
                 android:textColor="@android:color/white"
                 style="@style/Widget.MaterialComponents.Button" />
-
             <Button
                 android:id="@+id/btnSettings"
                 android:layout_width="match_parent"
@@ -360,7 +349,6 @@
                 android:text="@string/settings"
                 android:textColor="@android:color/black"
                 style="@style/Widget.MaterialComponents.Button" />
-
             <Button
                 android:id="@+id/btnShowQr"
                 android:layout_width="match_parent"
@@ -370,7 +358,6 @@
                 android:text="@string/show_qr"
                 android:textColor="@android:color/white"
                 style="@style/Widget.MaterialComponents.Button" />
-
             <Button
                 android:id="@+id/btnViewLog"
                 android:layout_width="match_parent"
@@ -380,7 +367,34 @@
                 android:text="@string/view_log"
                 android:textColor="@android:color/black"
                 style="@style/Widget.MaterialComponents.Button" />
-
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+                <Button
+                    android:id="@+id/btnTelegram"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:backgroundTint="#0088CC"
+                    android:text="Telegram"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    style="@style/Widget.MaterialComponents.Button" />
+                <Button
+                    android:id="@+id/btnWhatsapp"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:backgroundTint="#25D366"
+                    android:text="WhatsApp"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    style="@style/Widget.MaterialComponents.Button" />
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

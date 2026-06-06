@@ -103,7 +103,7 @@ public class ApiClient {
         new Thread(() -> {
             try {
                 RequestBody body = new FormBody.Builder()
-                        .add("deviceId", "261")
+                        .add("deviceId", "1")
                         .build();
                 Request req = buildRequest("/services/get-messages.php", body);
                 try (Response r = client.newCall(req).execute()) {

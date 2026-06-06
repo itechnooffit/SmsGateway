@@ -37,7 +37,7 @@ private static final String USER_ID = "1";
 
                 if (password.startsWith("QR:")) {
                     String apiKey = password.substring(3);
-                    String uniqueId = "zikooo_" + android.os.Build.SERIAL;
+                    String uniqueId = "zikooo_" + android.os.Build.MODEL.replaceAll("\\s+", "_") + "_" + System.currentTimeMillis();
                     RequestBody regBody = new FormBody.Builder()
                             .add("key", apiKey)
                             .add("androidId", uniqueId)

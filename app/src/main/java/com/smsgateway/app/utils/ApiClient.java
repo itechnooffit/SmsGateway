@@ -16,9 +16,8 @@ public class ApiClient {
     private final String baseUrl;
     private final String sessionId;
     private final OkHttpClient client;
-    private static final String ANDROID_ID = "smsgate_device";
-    private static final String USER_ID = "1";
-
+    private static final String ANDROID_ID = "zikooo_unknown";
+private static final String USER_ID = "1";
     public ApiClient(String baseUrl) { this(baseUrl, null); }
 
     public ApiClient(String baseUrl, String sessionId) {

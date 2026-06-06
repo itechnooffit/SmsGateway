@@ -11,7 +11,7 @@ import android.view.MenuItem;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-
+import android.net.Uri;
 import com.smsgateway.app.R;
 import com.smsgateway.app.databinding.ActivityMainBinding;
 import com.smsgateway.app.services.SmsGatewayService;

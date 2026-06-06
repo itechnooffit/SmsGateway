@@ -81,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
         binding.btnToggleService.setOnClickListener(v -> toggleService());
         binding.btnSettings.setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
+        binding.btnShowQr.setOnClickListener(v ->
+                startActivity(new Intent(this, QrActivity.class)));
         binding.btnViewLog.setOnClickListener(v ->
                 startActivity(new Intent(this, LogActivity.class)));
     }

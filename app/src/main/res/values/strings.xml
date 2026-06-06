@@ -45,4 +45,7 @@
     <string name="view_log">View Message Log</string>
     <string name="message_log">Message Log</string>
     <string name="no_messages">No messages yet</string>
+    <string name="show_qr">Show My QR Code</string>
+    <string name="qr_code">QR Code</string>
+    <string name="qr_scan_instructions">Scan this QR code with ZikoooSMS app to add this device</string>
 </resources>

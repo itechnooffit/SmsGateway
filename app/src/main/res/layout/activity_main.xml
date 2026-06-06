@@ -362,9 +362,20 @@
                 style="@style/Widget.MaterialComponents.Button" />
 
             <Button
+                android:id="@+id/btnShowQr"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginBottom="12dp"
+                android:backgroundTint="@color/primary_blue"
+                android:text="@string/show_qr"
+                android:textColor="@android:color/white"
+                style="@style/Widget.MaterialComponents.Button" />
+
+            <Button
                 android:id="@+id/btnViewLog"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
+                android:layout_marginBottom="12dp"
                 android:backgroundTint="@color/btn_grey"
                 android:text="@string/view_log"
                 android:textColor="@android:color/black"

@@ -85,6 +85,19 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(this, QrActivity.class)));
         binding.btnViewLog.setOnClickListener(v ->
                 startActivity(new Intent(this, LogActivity.class)));
+        binding.btnTelegram.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://t.me/zikooo2002")));
+            } catch (Exception e) {}
+        });
+
+        binding.btnWhatsapp.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://wa.me/40760100024")));
+            } catch (Exception e) {}
+        });
     }
 
     private void startGatewayService() {

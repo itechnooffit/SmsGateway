@@ -92,3 +92,10 @@ public class PrefsManager {
         prefs.edit().remove(KEY_AUTH_TOKEN).remove(KEY_LOGGED_IN).apply();
     }
 }
+public void setActivated(boolean activated) {
+        prefs.edit().putBoolean("activated", activated).apply();
+    }
+
+    public boolean isActivated() {
+        return prefs.getBoolean("activated", false);
+    }

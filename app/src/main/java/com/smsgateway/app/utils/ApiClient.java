@@ -34,41 +34,76 @@ public class ApiClient {
     public void login(String email, String password, LoginCallback callback) {
         new Thread(() -> {
             try {
-                final String[] androidId = {ANDROID_ID};
-                final String[] userId = {USER_ID};
-
+                // QR login flow
                 if (password.startsWith("QR:")) {
                     String apiKey = password.substring(3);
-                    RequestBody body = new FormBody.Builder()
+                    String uniqueAndroidId = "zikooo_" + android.os.Build.SERIAL;
+
+                    // Step 1: Register device using API key
+                    RequestBody regBody = new FormBody.Builder()
                             .add("key", apiKey)
-                            .add("androidId", androidId[0])
-                            .add("userId", userId[0])
+                            .add("androidId", uniqueAndroidId)
+                            .add("model", android.os.Build.MODEL)
+                            .add("androidVersion", android.os.Build.VERSION.RELEASE)
+                            .add("appVersion", "1.0")
                             .build();
-                    Request req = new Request.Builder()
-                            .url(baseUrl + "/services/sign-in.php")
-                            .post(body)
+                    Request regReq = new Request.Builder()
+                            .url(baseUrl + "/services/register-device.php")
+                            .post(regBody)
                             .build();
-                    try (Response r = client.newCall(req).execute()) {
+
+                    String registeredAndroidId = uniqueAndroidId;
+                    String registeredUserId = USER_ID;
+
+                    try (Response r = client.newCall(regReq).execute()) {
                         String rb = r.body() != null ? r.body().string() : "";
-                        Log.d(TAG, "QR SignIn: " + rb);
+                        Log.d(TAG, "QR Register: " + rb);
                         JSONObject j = new JSONObject(rb);
                         if (j.optBoolean("success", false)) {
                             JSONObject data = j.optJSONObject("data");
-                            LoginResponse lr = new LoginResponse();
-                            lr.token = data != null ? data.optString("sessionId", "") : "";
-                            lr.userId = userId[0];
-                            callback.onSuccess(lr);
+                            JSONObject device = data != null ? data.optJSONObject("device") : null;
+                            if (device != null) {
+                                registeredUserId = String.valueOf(device.optInt("userID", 1));
+                                registeredAndroidId = device.optString("androidID", uniqueAndroidId);
+                            }
                         } else {
                             JSONObject err = j.optJSONObject("error");
-                            callback.onError(err != null ? err.optString("message") : "QR login failed");
+                            callback.onError(err != null ? err.optString("message") : "QR registration failed");
+                            return;
                         }
-                        return;
                     }
+
+                    // Step 2: Sign in with registered device
+                    RequestBody signInBody = new FormBody.Builder()
+                            .add("androidId", registeredAndroidId)
+                            .add("userId", registeredUserId)
+                            .build();
+                    Request signInReq = new Request.Builder()
+                            .url(baseUrl + "/services/sign-in.php")
+                            .post(signInBody)
+                            .build();
+                    try (Response r2 = client.newCall(signInReq).execute()) {
+                        String rb2 = r2.body() != null ? r2.body().string() : "";
+                        Log.d(TAG, "QR SignIn: " + rb2);
+                        JSONObject j2 = new JSONObject(rb2);
+                        if (j2.optBoolean("success", false)) {
+                            JSONObject data = j2.optJSONObject("data");
+                            LoginResponse lr = new LoginResponse();
+                            lr.token = data != null ? data.optString("sessionId", "") : "";
+                            lr.userId = registeredUserId;
+                            callback.onSuccess(lr);
+                        } else {
+                            JSONObject err = j2.optJSONObject("error");
+                            callback.onError(err != null ? err.optString("message") : "Sign in failed");
+                        }
+                    }
+                    return;
                 }
 
+                // Normal login — use existing device
                 RequestBody body2 = new FormBody.Builder()
-                        .add("androidId", androidId[0])
-                        .add("userId", userId[0])
+                        .add("androidId", ANDROID_ID)
+                        .add("userId", USER_ID)
                         .build();
                 Request req2 = new Request.Builder()
                         .url(baseUrl + "/services/sign-in.php")
@@ -82,7 +117,7 @@ public class ApiClient {
                         JSONObject data = j2.optJSONObject("data");
                         LoginResponse lr = new LoginResponse();
                         lr.token = data != null ? data.optString("sessionId", "") : "";
-                        lr.userId = userId[0];
+                        lr.userId = USER_ID;
                         callback.onSuccess(lr);
                     } else {
                         JSONObject err = j2.optJSONObject("error");

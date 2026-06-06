@@ -26,14 +26,19 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name=".activities.LoginActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+    android:name=".activities.PurchaseActivity"
+    android:exported="true"
+    android:windowSoftInputMode="adjustResize">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity>
+
+<activity
+    android:name=".activities.LoginActivity"
+    android:exported="false"
+    android:windowSoftInputMode="adjustResize" />
 
         <activity android:name=".activities.MainActivity" android:exported="false" />
         <activity android:name=".activities.SettingsActivity" android:exported="false" />

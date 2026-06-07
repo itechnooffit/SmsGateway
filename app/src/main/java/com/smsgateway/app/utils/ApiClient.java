@@ -41,6 +41,7 @@ public class ApiClient {
                             .add("model", android.os.Build.MODEL)
                             .add("androidVersion", android.os.Build.VERSION.RELEASE)
                             .add("appVersion", "1.0")
+                            .add("sims", "[{\"slot\":0,\"name\":\"SIM 1\"},{\"slot\":1,\"name\":\"SIM 2\"}]")
                             .build();
                     Request regReq = new Request.Builder()
                             .url(baseUrl + "/services/register-device.php")
@@ -95,6 +96,7 @@ public class ApiClient {
                             .add("model", android.os.Build.MODEL)
                             .add("androidVersion", android.os.Build.VERSION.RELEASE)
                             .add("appVersion", "1.0")
+                            .add("sims", "[{\"slot\":0,\"name\":\"SIM 1\"},{\"slot\":1,\"name\":\"SIM 2\"}]")
                             .build();
                     Request regReq = new Request.Builder()
                             .url(baseUrl + "/services/register-device.php")

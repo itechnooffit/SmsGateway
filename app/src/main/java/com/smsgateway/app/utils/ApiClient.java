@@ -63,8 +63,31 @@ public class ApiClient {
                             return;
                         }
                     }
-                } else {
-                    // Password login - register device using API key
+} else {
+                    // Step 1: Verify email/password first
+                    RequestBody verifyBody = new FormBody.Builder()
+                            .add("email", email)
+                            .add("password", password)
+                            .build();
+                    Request verifyReq = new Request.Builder()
+                            .url(baseUrl + "/services/verify-credentials.php")
+                            .post(verifyBody)
+                            .build();
+                    try (Response vr = client.newCall(verifyReq).execute()) {
+                        String vrb = vr.body() != null ? vr.body().string() : "";
+                        Log.d(TAG, "Verify: " + vrb);
+                        JSONObject vj = new JSONObject(vrb);
+                        if (!vj.optBoolean("success", false)) {
+                            JSONObject err = vj.optJSONObject("error");
+                            callback.onError(err != null ? err.optString("message") : "Invalid credentials");
+                            return;
+                        }
+                        JSONObject vdata = vj.optJSONObject("data");
+                        if (vdata != null) {
+                            userId[0] = String.valueOf(vdata.optInt("userId", 1));
+                        }
+                    }
+                    // Step 2: Register device using API key
                     String apiKey = "4070fcf23eb1ba2a28408447cc1256351241d768";
                     RequestBody regBody = new FormBody.Builder()
                             .add("key", apiKey)

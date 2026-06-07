@@ -85,7 +85,8 @@ public class SmsGatewayService extends Service {
                         String id = msg.getString("ID");
                         String to = msg.getString("number");
                         String text = msg.getString("message");
-                        sendSmsMessage(id, to, text);
+                        int msgSimSlot = msg.isNull("simSlot") ? simSlot : msg.getInt("simSlot");
+                        sendSmsMessage(id, to, text, msgSimSlot);
                     } catch (Exception e) {
                         Log.e(TAG, "Error parsing message", e);
                     }
@@ -98,12 +99,12 @@ public class SmsGatewayService extends Service {
         });
     }
 
-    private void sendSmsMessage(String messageId, String to, String text) {
+    private void sendSmsMessage(String messageId, String to, String text, int msgSimSlot) {
         try {
             SmsManager smsManager;
-            if (simSlot == 1 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+            if (msgSimSlot == 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 smsManager = SmsManager.getSmsManagerForSubscriptionId(getSubscriptionId(0));
-            } else if (simSlot == 2 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+            } else if (msgSimSlot == 1 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 smsManager = SmsManager.getSmsManagerForSubscriptionId(getSubscriptionId(1));
             } else {
                 smsManager = SmsManager.getDefault();
@@ -136,7 +137,7 @@ public class SmsGatewayService extends Service {
             broadcastStatsUpdate();
 
             if (prefsManager.isAutoRetry()) {
-                handler.postDelayed(() -> sendSmsMessage(messageId, to, text), 30000);
+                handler.postDelayed(() -> sendSmsMessage(messageId, to, text, msgSimSlot), 30000);
             } else {
                 apiClient.reportFailed(messageId, e.getMessage(), new ApiClient.SimpleCallback() {
                     @Override public void onSuccess() {}

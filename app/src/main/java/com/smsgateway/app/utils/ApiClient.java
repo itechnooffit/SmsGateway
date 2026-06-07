@@ -1,5 +1,4 @@
 package com.smsgateway.app.utils;
-
 import android.util.Log;
 import com.smsgateway.app.models.LoginResponse;
 import org.json.JSONArray;
@@ -10,16 +9,13 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-
 public class ApiClient {
     private static final String TAG = "ApiClient";
     private final String baseUrl;
     private final String sessionId;
     private final OkHttpClient client;
-    private static final String ANDROID_ID = "zikooo_unknown";
-private static final String USER_ID = "1";
+    private static final String USER_ID = "1";
     public ApiClient(String baseUrl) { this(baseUrl, null); }
-
     public ApiClient(String baseUrl, String sessionId) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length()-1) : baseUrl;
         this.sessionId = sessionId;
@@ -28,14 +24,15 @@ private static final String USER_ID = "1";
                 .readTimeout(15, TimeUnit.SECONDS)
                 .build();
     }
-
     public void login(String email, String password, LoginCallback callback) {
         new Thread(() -> {
             try {
-                final String[] androidId = {ANDROID_ID};
+                // Generate unique device ID from phone model
+                String deviceAndroidId = "zikooo_" + android.os.Build.MODEL.replaceAll("\\s+", "_") + "_" + android.os.Build.SERIAL;
+                final String[] androidId = {deviceAndroidId};
                 final String[] userId = {USER_ID};
-
                 if (password.startsWith("QR:")) {
+                    // QR login - register new device first
                     String apiKey = password.substring(3);
                     String uniqueId = "zikooo_" + android.os.Build.MODEL.replaceAll("\\s+", "_") + "_" + System.currentTimeMillis();
                     RequestBody regBody = new FormBody.Builder()
@@ -66,8 +63,25 @@ private static final String USER_ID = "1";
                             return;
                         }
                     }
+                } else {
+                    // Password login - auto register device if not exists
+                    RequestBody regBody = new FormBody.Builder()
+                            .add("androidId", deviceAndroidId)
+                            .add("model", android.os.Build.MODEL)
+                            .add("androidVersion", android.os.Build.VERSION.RELEASE)
+                            .add("appVersion", "1.0")
+                            .add("userId", USER_ID)
+                            .build();
+                    Request regReq = new Request.Builder()
+                            .url(baseUrl + "/services/register-device-by-user.php")
+                            .post(regBody)
+                            .build();
+                    try (Response r = client.newCall(regReq).execute()) {
+                        String rb = r.body() != null ? r.body().string() : "";
+                        Log.d(TAG, "Auto Register: " + rb);
+                    } catch (Exception ignored) {}
                 }
-
+                // Sign in
                 RequestBody body = new FormBody.Builder()
                         .add("androidId", androidId[0])
                         .add("userId", userId[0])
@@ -97,7 +111,6 @@ private static final String USER_ID = "1";
             }
         }).start();
     }
-
     public void getPendingSms(PendingSmsCallback callback) {
         new Thread(() -> {
             try {
@@ -120,15 +133,12 @@ private static final String USER_ID = "1";
             } catch (Exception e) { callback.onError(e.getMessage()); }
         }).start();
     }
-
     public void reportDelivered(String messageId, SimpleCallback callback) {
         reportStatus(messageId, "Delivered", callback);
     }
-
     public void reportFailed(String messageId, String reason, SimpleCallback callback) {
         reportStatus(messageId, "Failed", callback);
     }
-
     private void reportStatus(String messageId, String status, SimpleCallback callback) {
         new Thread(() -> {
             try {
@@ -149,7 +159,6 @@ private static final String USER_ID = "1";
             } catch (Exception e) { callback.onError(e.getMessage()); }
         }).start();
     }
-
     public void forwardIncomingSms(String from, String message, long timestamp, SimpleCallback callback) {
         new Thread(() -> {
             try {
@@ -166,7 +175,6 @@ private static final String USER_ID = "1";
             } catch (Exception e) { callback.onError(e.getMessage()); }
         }).start();
     }
-
     private Request buildRequest(String path, RequestBody body) {
         Request.Builder builder = new Request.Builder()
                 .url(baseUrl + path)
@@ -176,7 +184,6 @@ private static final String USER_ID = "1";
         }
         return builder.build();
     }
-
     public interface LoginCallback {
         void onSuccess(LoginResponse response);
         void onError(String error);

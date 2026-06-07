@@ -64,21 +64,30 @@ public class ApiClient {
                         }
                     }
                 } else {
-                    // Password login - auto register device if not exists
+                    // Password login - register device using API key
+                    String apiKey = "4070fcf23eb1ba2a28408447cc1256351241d768";
                     RequestBody regBody = new FormBody.Builder()
+                            .add("key", apiKey)
                             .add("androidId", deviceAndroidId)
                             .add("model", android.os.Build.MODEL)
                             .add("androidVersion", android.os.Build.VERSION.RELEASE)
                             .add("appVersion", "1.0")
-                            .add("userId", USER_ID)
                             .build();
                     Request regReq = new Request.Builder()
-                            .url(baseUrl + "/services/register-device-by-user.php")
+                            .url(baseUrl + "/services/register-device.php")
                             .post(regBody)
                             .build();
                     try (Response r = client.newCall(regReq).execute()) {
                         String rb = r.body() != null ? r.body().string() : "";
                         Log.d(TAG, "Auto Register: " + rb);
+                        JSONObject j = new JSONObject(rb);
+                        if (j.optBoolean("success", false)) {
+                            JSONObject data = j.optJSONObject("data");
+                            JSONObject device = data != null ? data.optJSONObject("device") : null;
+                            if (device != null) {
+                                androidId[0] = device.optString("androidID", deviceAndroidId);
+                            }
+                        }
                     } catch (Exception ignored) {}
                 }
                 // Sign in
